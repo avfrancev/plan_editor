@@ -9,11 +9,13 @@
     //- input.input(type="number" v-model.number="currDay")
     .join
       button.join-item.btn(:class="[ currDay === -1 ? 'btn-active':'']" @click="currDay = -1") Все
-      button.join-item.btn(v-for="d,i in days" :class="[ currDay === i ? 'btn-active':'']" @click="currDay = i") {{ d }}
+      button.join-item.btn(v-for="d,i in days" :class="[ currDay === i ? 'btn-active':'']"
+        :style="`background: ${currDay === i ? colors[i]:''}; color: ${currDay === i ? 'black':'white'}`"
+        @click="currDay = i") {{ d }}
   
     //- pre {{ kmean.centroids }}
   
-    .w-full(:class="[isMapExpanded ? 'h-screen':'h-96']")
+    .w-full.rounded.overflow-hidden(:class="[isMapExpanded ? 'h-screen':'h-96']")
       yandex-map(:settings="{location: {center: [addresses[3].x, addresses[20].y], zoom: 12.3,}}")
         yandex-map-default-scheme-layer
         yandex-map-default-features-layer
@@ -47,7 +49,7 @@
             class="left-1/2 -bottom-2 transform-gpu transition border rounded-full"
             :class="[addr.hovered ? 'scale-150 z-10 border-neutral':'scale-100 -z-1 border-transparent']"
             )
-            .h-6.w-6.rounded-full.shadow-lg(
+            .h-6.w-6.rounded-full.shadow-lg1(
               :style="{...addr.pieChartStyles, transform: `translate(0%,0%)`}"
               :class="[addr.isInDay ? 'opacity-100':'opacity-30']"
               )
@@ -81,33 +83,45 @@
             div.hint {{ content }}
           
     //- pre {{ currentPulsesId }}
-    .flex.carousel
-      .carousel-item.rounded.flex.flex-col.max-w-96.border-2.m-2(
+    .carousel.w-full.box-border.space-x-4.justify-stretch.mt-6(
+      :class="[canDrop ? '':'no-drop']"
+      )
+      .carousel-item.rounded.flex.flex-col.flex-1.min-w-64.border-2.box-border(
         v-for="d,i in kmean.groupedAddressesByDays.value"
         :class="[currDay == i ? 'border-accent':'border-neutral']"
+        :style="{ borderColor: colors[currDay == i ? currDay : -1] }"
+        class=""
         )
-        .text-xl.text-center.flex.items-center.justify-between.space-x-2.px-6.py-4
-          .flex.items-center
-            .inline-block.rounded-full.h-6.w-6(:style="{ background: colors[i] }") 
-            .ml-2.font-bold.uppercase {{days[i]}}
-          span [ {{ d.length }} ]
+        .text-center.flex.items-baseline.justify-between.space-x-2.px-4.py-4
+          //- .flex.items-center
+            //- .inline-block.rounded-full.h-6.w-6(:style="{ background: colors[i] }") 
+          .font-bold.text-xl.uppercase {{days[i]}}
+          span Точек: {{ d.length }}
         .divider.divider-neutral.my-0
-        draggable.menu(
+        draggable(
           v-model="kmean.groupedAddressesByDays.value[i]"
           v-bind="dragOptions"
           itemKey="address"
           tag="ul"
+          :move="handleMove"
+          @start="isDragging = true"
           @end="handleDropEnd"
           :data-day-id="i"
         )
           template(#item="{ element, index }")
-            li.item(
+            //- @pointerover="onAddrOver(element)"
+            li(
               :id="element.iid"
               :ref="(el) => element.li = el"
-              @pointerover="onAddrOver(element)"
+              @pointerenter="onAddrPointerEnter(element)"
               )
-              div.flex
-                span {{ element.address }}
+              div.flex.p-2.space-x-2(
+                class="transition rounded mx-2 p-2 select-none"
+                :class="{ 'bg-neutral': element.isHovered }"
+                )
+                //- span {{ element.canDrag }}
+                .h-4.w-4.rounded-full(:style="{...element.pieChartStyles}")
+                .flex-1 {{ element.address }}
                 //- span.text-xs [{{ element.iid }}]
                 //- span.text-lg [{{ element.visit_frequency }}]
                 span.text-nowrap.text-lg {{ element.days }}
@@ -165,11 +179,13 @@
   import aaa from 'src/addresses.json'
   console.log(aaa); 
   
-  
+  const isDragging = ref(false)
+  const canDrop = ref(true)
   const dragOptions = {
           animation: 200,
           group: "description",
           disabled: false,
+          forceFallback: true,
           ghostClass: "ghost"
         };
   
@@ -227,7 +243,7 @@
     })
     d.pieChartStyles = computedEager(() => {
       if (!d.days) return null
-      const numOfDays = d.days.length;
+      const numOfDays = d.days.sort((a,b) => b - a).length;
       const gradientFragments = d.days.map((day, index) => {
         const color = colors[day % colors.length];
         const share = 100 / numOfDays;
@@ -300,7 +316,7 @@
   
   import useKMean from 'src/composables/kmean.js'
   const kmean = useKMean(addresses)
-  kmean.updateKMean()
+  // kmean.updateKMean()
   
   
   const clickGenPlan = () => {
@@ -397,11 +413,30 @@
       })
     }
   }
+
   
+  function handleMove(e) {
+    const list = e.relatedContext.list
+    const el = e.draggedContext.element
+    let fromDay = +e.from.dataset.dayId
+    let toDay = +e.to.dataset.dayId
+    // console.log(e);
+    canDrop.value = true
+    if (fromDay !== toDay && list.includes(el)) {
+      // e.originalEvent.target.classList.add('no-drop');
+      canDrop.value = false
+      return false;
+    }
+    return true
+  }
+
   function handleDropEnd(e, ee) {
+    isDragging.value = false
     let fromDay = +e.from.dataset.dayId
     let toDay = +e.to.dataset.dayId
     // console.log({fromId, toId});
+    canDrop.value = true
+
     let a = addresses.find(el => el.iid === e.item.id)
     if (a) {
       // console.log(fromId);
@@ -445,10 +480,17 @@
     addr.li.scrollIntoView({ behavior: 'smooth' })
   }
   
+  function onAddrPointerEnter(addr) {
+    // console.log(addr);
+    addresses.forEach((a) => a.isHovered = false)
+    if (!isDragging.value)
+      addr.isHovered = true
+  }
+  
   function onAddrOver(addr) {
     // console.log(addr)
-    addresses.forEach((a) => a.hovered = false)
-    addr.hovered = true
+    addresses.forEach((a) => a.isHovered = false)
+    addr.isHovered = true
   }
   
   /////////////////////////////////////
@@ -507,6 +549,10 @@
   <style lang="sass">
     .ghost
       opacity: 0.5
+      /* & *
+        @apply cursor-not-allowed bg-neutral */
+    .no-drop *
+      @apply cursor-no-drop
     .hint
       position: absolute
       padding: 4px

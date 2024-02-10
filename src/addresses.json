@@ -1,7 +1,7 @@
 [
     {
-        "store": "Верный",
-        "address": "Борисовский проезд, 14 стр.2",
+        "store": "XXXX",
+        "address": "YYYYYYYY",
         "ya": {
             "type": "Feature",
             "geometry": {
@@ -32,7 +32,7 @@
                 }
             }
         },
-        "visit_frequency": 1,
+        "visit_frequency": 3,
         "cluster": 0,
         "day": 0,
         "x": 37.722298,
@@ -1163,7 +1163,7 @@
                 }
             }
         },
-        "visit_frequency": 2,
+        "visit_frequency": 4,
         "cluster": 0,
         "day": 0,
         "x": 37.742276,
@@ -1202,7 +1202,7 @@
                 }
             }
         },
-        "visit_frequency": 2,
+        "visit_frequency": 3,
         "cluster": 2,
         "day": 2,
         "x": 37.745043,
