@@ -9,7 +9,7 @@
 </template>
 
 <script setup>
-import { useGesture } from '@vueuse/gesture'
+// import { useGesture } from '@vueuse/gesture'
 
 const hello = ref()
 // const mouse = reactive(useMouse({ target: hello }))
