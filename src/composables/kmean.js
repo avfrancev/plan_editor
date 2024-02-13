@@ -1,4 +1,4 @@
-import { group } from 'd3-array'
+import { groups, sort, groupSort } from 'd3-array'
 
 const distance = (a, b) => {
   return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
@@ -39,7 +39,7 @@ export default (addresses) => {
 
     let hasChanged = true;
     let iterations = 0;
-    const maxIterations = 10; // Set a limit to avoid infinite loops
+    const maxIterations = 100; // Set a limit to avoid infinite loops
 
     while (hasChanged && iterations < maxIterations) {
       hasChanged = false;
@@ -107,137 +107,135 @@ export default (addresses) => {
   //   }
   // });
 
-  console.log(addresses);
-  ///////////////////////////////////////
+  // console.log(addresses);
 
-  // Call the kMeanClustering function with the desired number of clusters (k)
-  // const k = 5; // Assuming we want 5 clusters
-  // const clusteredData = kMeanClustering(addresses, k);
-  // Now clusteredData.centroids contains the centroids and clusteredData.addresses contains addresses with their assigned clusters
-  // console.log(clusteredData);
-  ///////////////////////////////////////
+  // console.log(groupSort(
+    //   addresses,
+  //   (a,b) => {
+  //     console.log(a.length, b.length)
+  //     // return D.length
+  //     return a,length - b.length
+  //   },
+  //   // (a, b) => a[1].length - b[1].length,
+  //   (address) => address.cluster));
 
-  // let centroids = reactive(addresses.slice(0,5).map((d) => {
-  //   return {
-  //     x: unref(d.x),
-  //     y: unref(d.y),
-  //   }
-  // }))
-  // // console.log(centroids);
+  // Each address have visit frequency per week property and cluster property. I want to distribute addresses along a week to days group based on cluster and visit frequency.
+  function isAddressInGroup(address, G) {
+    return G.some(addressInGroup => addressInGroup === address);
+  }
 
-  // const closestCentroid = (point) => {
-  //   const distances = centroids.map(centroid => distance(point, centroid));
-  //   const i = distances.findIndex(d => d === Math.min(...distances));
-  //   return i;
-  // }
-
-  // const updatePoints = (points) => {
-  //   points.forEach(point => {
-  //     point.cluster = closestCentroid(point);
-  //   });
-  // }
-
-  // updatePoints(addresses)
-
-
-  // const updateCentroids = (points) => {
-  //   centroids.forEach((centroid, i) => {
-  //     const cluster = points.filter(point => point.cluster === i);
-  //     if (cluster.length > 0) {
-  //       centroid.x = avg(cluster.map(point => point.x));
-  //       centroid.y = avg(cluster.map(point => point.y));
-  //     }
-  //   });
-  //   // centroidsSvg.transition().duration(500).attr('cx', d => x(d.x)).attr('cy', d => y(d.y));
-  // }
+  function getNextMinimalGroupByAddress(addresses) {
+    const groupedAddressesByCluster = groups(addresses, address => address.cluster)
+    const sortedGroupedAddressesByCluster = groupedAddressesByCluster.sort((a, b) => a[1].length - b[1].length);
+    return sortedGroupedAddressesByCluster[0][1];
+  }
   
-  // let groupedAddresses
-  
-  // const groupedAddressesByDays = ref({})
-  
-  
-  // const update = () => {
-  //   updateCentroids(addresses)
-  //   updatePoints(addresses)
-
-  //   // groupedAddresses = addresses.reduce((groups, address) => {
-  //   //   const clusterId = address.cluster;
-  //   //   if (!groups[clusterId]) {
-  //   //     groups[clusterId] = [];
-  //   //   }
-  //   //   groups[clusterId].push(address);
-  //   //   return groups;
-  //   // }, {});
-
-  //   // console.log(addresses.gr);
-  //   // console.log(l)
-  //   // console.log(aaa);
-
-  //   // let currentDay = 0;
-
-  //   // console.log(groupedAddresses);
+  addresses.forEach(address => {
+    // Initialize an array to hold day assignments
+    // address.days = Array(7).fill(false);
     
-  addresses.forEach((address) => {
-    // Initialize an empty array to store the days for the address
-    address.days = []
-  
-    // Retrieve the visit frequency and cluster of the address
-    let visitFrequency = address.visit_frequency
-    let cluster = address.cluster
-  
-    // Add the initial cluster to the days array
-    address.days.push(+cluster) 
-  
-    // Group addresses by cluster
-    let clusterGroup = group(addresses, d => d.cluster);
-    let sortedGroup = Array.from(clusterGroup).sort((a, b) => a[1].length - b[1].length);
+    address.days = [];
+    let visitFrequency = address.visit_frequency;
+    let assignedCluster = address.cluster;
+    address.days.push(assignedCluster);
     
-    // Iterate through the address visit frequency
-    while (visitFrequency-- > 1) {
-      let currentGroupIndex = 0;
-      let addressInDays = false;
-  
-      // Find an empty day to assign to the address
-      while (true) {
-        // Check if the address is in the current cluster group
-        addressInDays = sortedGroup[currentGroupIndex][1].includes(address);
-        
-        if (!addressInDays) {
-          // If not, add the cluster to the days array and break the loop
-          address.days.push(+sortedGroup[currentGroupIndex][0]) 
-          break
-        }
-        currentGroupIndex++;
+    const groupedAddressesByCluster = groups(addresses, address => address.cluster)
+    const sortedGroupedAddressesByCluster = groupedAddressesByCluster.sort((a, b) => a[1].length - b[1].length);
+    let minimalGroupID = sortedGroupedAddressesByCluster[0][0];
+    const getMinimalGroupByAddress = (i) => sortedGroupedAddressesByCluster[i%5][1];
+
+    for (let i = 1; i < visitFrequency; i++) {
+      // let isAddrInGroup = sortedGroupedAddressesByCluster[i % 5][1].some(a => a === address);
+      // const is
+      const isAddressInDays = address.days.includes(minimalGroupID % 5);
+      // const isAddressInDays = address.days.some(d => address === sortedGroupedAddressesByCluster[minimalGroupID % 5][1]);
+      // console.log(i, visitFrequency, isAddressInDays);
+      if (!isAddressInDays)
+        address.days.push(minimalGroupID % 5);
+      else {
+        address.days.push(++minimalGroupID % 5);
+        // console.log(minimalGroupID);
       }
     }
-  })
+    // address.days.sort((a, b) => a - b);
+    // console.log(toRaw(address.days));
+    return
+    while (true) {
+      if (visitFrequency <= 1) return
 
-    // const g = addresses.reduce((groups, address) => {
-    //   let days = address.days
-    //   console.log(address);
-    //   days.forEach((day, i) => {
-    //     if (!groups[day]) {
-    //       groups[day] = [];
-    //     }
-    //     // let a = {...address}
-    //     let a = address
-    //     a.iid = `${a.address}_${days[i]}`
-    //     groups[day].push(a);
-    //   })
-    //   return groups;
-    // }, {})
+      let isAddrInGroup = sortedGroupedAddressesByCluster[assignedCluster++%5][1].some(a => a === address);
+      if (!isAddrInGroup)
+        address.days.push(minimalGroupID);
+      visitFrequency--
+      minimalGroupID++
+      // assignedCluster++
+      // break
+    }
+    return
+    sortedGroupedAddressesByCluster.forEach((group, i) => {
+      if (visitFrequency <= 1) return
+      // let currentGroupId = group[0]
+      // console.log(currentGroupId, group[1].length, address.address);
+      let isAddrInGroup  = group[1].some(a => a === address);
+      let isAddressInGroup_ = isAddressInGroup(address, group, i)
+      console.log(isAddressInGroup_, { isAddrInGroup });
+      if (!isAddrInGroup)
+        address.days.push(i);
+        // assignedCluster = currentGroupId
+      visitFrequency--
+    })
+    return
+
+    // while (visitFrequency < 0) {
+      
+    //   const _isAddressInGroup = isAddressInGroup(address, sortedGroupedAddressesByCluster[assignedCluster][1])
+    //   console.log(_isAddressInGroup);
+    // }
+
+    for (let i = 1; i < visitFrequency; i++) {
+      console.log(address.address, i)
+      console.log(isAddressInGroup(address, sortedGroupedAddressesByCluster[i-1][1]));
+      const _isAddressInGroup = isAddressInGroup(address, sortedGroupedAddressesByCluster[i - 1][1])
+      if (_isAddressInGroup) {
+
+      }
+    }
+    let counter = 0
+    while (--visitFrequency > 0) {
+      // Calculate distances to each centroid
+      const closestCentroid = sortedGroupedAddressesByCluster[0][0];
+      // const closestCentroid = sor
+      console.log(closestCentroid, visitFrequency);
+      // Assign the next closest day, if available
+      if (closestCentroid) {
+        address.days.push(closestCentroid);
+        assignedCluster = closestCentroid; // Update the assigned cluster
+      } else {
+        // break; // No other centroids to assign, end the loop
+      }
+    }
+
+    // const sortedAddressesByDays = addresses
+    
+    // Distribute visitFrequency across the week days
+    // for (let i = 0, day = assignedCluster; i < visitFrequency; ++i, day = (day + 1) % 5) {
+    //   // address.days[day] = true;
+    //   address.days.push(day);
+    // }
+    // console.log(address.days);
+  });
 
   const groupedAddressesByDays = ref(addresses.reduce((groups, address) => {
     let days = address.days
-    console.log(address);
+    // console.log(address);
     days.forEach((day, i) => {
       if (!groups[day]) {
         groups[day] = [];
       }
       // let a = {...address}
-      let a = address
-      a.iid = `${a.address}_${days[i]}`
-      groups[day].push(a);
+      // let a = address
+      address.iid = `${address.address}_${days[i]}`
+      groups[day].push(address);
     })
     return groups;
   }, {}))

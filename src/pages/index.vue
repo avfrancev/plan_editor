@@ -1,169 +1,112 @@
 <template lang="pug">
-  .container.mx-auto.px-2.mt-4.text-xs
+  .container.mx-auto.px-2.text-xs
+    FileInput(v-model="fileData")
+    button.btn.btn-error(@click="exportFile") Export
+
     //- pre {{ pulses }}
-    button.mr-12.btn(@click="clickGenPlan") clickGenPlan
-    button.mr-12.btn(@click="fillCoordinates") fillCoordinates
-    button.mr-12.btn(@click="makeBins(addresses)") makeBins
-    button.mr-12.btn(@click="isMapExpanded = !isMapExpanded") isMapExpanded
-    button.mr-12.btn(@click="kmean.updateKMean") updateKMean
+    //- button.mr-12.btn(@click="clickGenPlan") clickGenPlan
+    //- button.mr-12.btn(@click="fillCoordinates") fillCoordinates
+    //- button.mr-12.btn(@click="makeBins(addresses)") makeBins
+    //- button.mr-12.btn(@click="isMapExpanded = !isMapExpanded") isMapExpanded
+    //- button.mr-12.btn(@click="kmean.updateKMean") updateKMean
     //- input.input(type="number" v-model.number="currDay")
-    .join
-      button.join-item.btn(:class="[ currDay === -1 ? 'btn-active':'']" @click="currDay = -1") Все
-      button.join-item.btn(v-for="d,i in days" :class="[ currDay === i ? 'btn-active':'']"
-        :style="`background: ${currDay === i ? colors[i]:''}; color: ${currDay === i ? 'black':'white'}`"
-        @click="currDay = i") {{ d }}
-  
-    //- pre {{ kmean.centroids }}
-  
-    .w-full.rounded.overflow-hidden(:class="[isMapExpanded ? 'h-screen':'h-96']")
-      yandex-map(:settings="{location: {center: [addresses[3].x, addresses[20].y], zoom: 12.3,}}")
-        yandex-map-default-scheme-layer
-        yandex-map-default-features-layer
-  
-        //- v-for="(addr, i) in filteredAddresses" :key="i"
-        yandex-map-marker(
-          v-for="(addr, i) in addresses" :key="i"
-          position="center left-center"
-          :settings="{ coordinates: [addr.x, addr.y], properties: { hint: `${addr.address}` }, }"
-          )
-          //- .mask.mask-squircle
-          //- pre {{ addr.store.toLowerCase() }}
-          //- button.btn
-          //- .h-10.w-10
-            //- a(:href="`#${addr.id}`")
-            a(
-              @click="scrollToAddr(addr)"
-              @pointerover="onAddrOver(addr)"
-              @pointerout="addr.hovered = false"
-              )
-              img.bg-transparent.mask1.mask-squircle1.rounded-lg(
-                class="border-2 border-red-500"
-                :class="addr.hovered ? 'border-primary':''"
-                :src="`${addr.store.toLowerCase()}.png`")
-          //- .absolute(class="1left-1/2 1-bottom-2")
-            .h-1.w-1.rounded.bg-error(style="left: 0%; transform: translateX(-50%)")
-          //- div.absolute
-          //- .absolute2
-            PieChart.rounded-full.h-5.w-5.shadow-lg(v-bind="{days: addr.days, colors}" style="left: 0%; transform: translate(0%,50%)")
-          .absolute(
-            class="left-1/2 -bottom-2 transform-gpu transition border rounded-full"
-            :class="[addr.hovered ? 'scale-150 z-10 border-neutral':'scale-100 -z-1 border-transparent']"
-            )
-            .h-6.w-6.rounded-full.shadow-lg1(
-              :style="{...addr.pieChartStyles, transform: `translate(0%,0%)`}"
-              :class="[addr.isInDay ? 'opacity-100':'opacity-30']"
-              )
-  
-          //- .tooltip.tooltip-open.tooltip-primary(data-tip="error")
-          //- button.block.h-auto.btn.btn-secondary.py-2 {{addr.address}}
-        //- yandex-map-marker(
-          v-for="(addr, i) in kmean.centroids" :key="i"
-          class="transition"
-          :container-attrs="{ 'class': `transition` }"
-          position="top left-center"
-          :settings="{ coordinates: [addr.x, addr.y], properties: { hint: `${addr.address}` }, }"
-          )
-          .absolute(class="left-1/2 -bottom-2")
-            .h-8.w-8.rounded-full.bg-success.border.border-black(style="left: 0%; transform: translateX(-50%)")
-          
-        //- YandexMapClusterer(zoom-on-cluster-click)
-        //- YandexMapCollection(zoom-on-cluster-click)
-          //- template(v-for="(addr, i) in addresses" :key="i")
-          YandexMapDefaultMarker(
-            v-for="(addr, i) in filteredAddresses" :key="i"
-            :settings="{ coordinates: [addr.x, addr.y], properties: { hint: `${addr.address} [ ${addr.store} ]` } }"
-            )
-            //- :position="`left-center top`"
-            template
-              div asdasdasd!!
-          template(#cluster="{ length }")
-            .cluster {{ length }}
-        YandexMapHint(hint-property="hint")
-          template(#default="{ content }")
-            div.hint {{ content }}
-          
-    //- pre {{ currentPulsesId }}
-    .carousel.w-full.box-border.space-x-4.justify-stretch.mt-6(
-      :class="[canDrop ? '':'no-drop']"
-      )
-      .carousel-item.rounded.flex.flex-col.flex-1.min-w-64.border-2.box-border(
-        v-for="d,i in kmean.groupedAddressesByDays.value"
-        :class="[currDay == i ? 'border-accent':'border-neutral']"
-        :style="{ borderColor: colors[currDay == i ? currDay : -1] }"
-        class=""
+    div.min-h-96(v-if="addresses.length > 0")
+      #top.my-4.sticky.top-0
+        .join
+          button.join-item.btn(:class="[ currDay === -1 ? 'btn-active':'']" @click="currDay = -1") Все
+          button.join-item.btn(v-for="d,i in days" :class="[ currDay === i ? 'btn-active':'']"
+            :style="`background: ${currDay === i ? colors[i]:''}; color: ${currDay === i ? 'black':'white'}`"
+            @click="currDay = i") {{ d }}
+    
+      //- pre {{ kmean.centroids }}
+    
+      .w-full.rounded.overflow-hidden.sticky.top-0(:class="[isMapExpanded ? 'h-screen':'h-96']")
+        YaMap(v-bind="{ addresses }")
+            
+      //- DaysCardView(v-bind="{ addresses, kmean }")
+      //- pre {{ currentPulsesId }}
+      .carousel.w-full.box-border.space-x-4.justify-stretch.mt-6(
+        :class="[canDrop ? '':'no-drop']"
         )
-        .text-center.flex.items-baseline.justify-between.space-x-2.px-4.py-4
-          //- .flex.items-center
-            //- .inline-block.rounded-full.h-6.w-6(:style="{ background: colors[i] }") 
-          .font-bold.text-xl.uppercase {{days[i]}}
-          span Точек: {{ d.length }}
-        .divider.divider-neutral.my-0
-        draggable(
-          v-model="kmean.groupedAddressesByDays.value[i]"
-          v-bind="dragOptions"
-          itemKey="address"
-          tag="ul"
-          :move="handleMove"
-          @start="isDragging = true"
-          @end="handleDropEnd"
-          :data-day-id="i"
-        )
-          template(#item="{ element, index }")
-            //- @pointerover="onAddrOver(element)"
-            li(
-              :id="element.iid"
-              :ref="(el) => element.li = el"
-              @pointerenter="onAddrPointerEnter(element)"
-              )
-              div.flex.p-2.space-x-2(
-                class="transition rounded mx-2 p-2 select-none"
-                :class="{ 'bg-neutral': element.isHovered }"
-                )
-                //- span {{ element.canDrag }}
-                .h-4.w-4.rounded-full(:style="{...element.pieChartStyles}")
-                .flex-1 {{ element.address }}
-                //- span.text-xs [{{ element.iid }}]
-                //- span.text-lg [{{ element.visit_frequency }}]
-                span.text-nowrap.text-lg {{ element.days }}
-  
-        //- draggable.menu(
-          v-bind="dragOptions"
-          draggable=".item"
-          @change="handleDayChange"
-          @end="handleDropEnd"
+        .carousel-item.rounded.flex.flex-col.flex-1.min-w-52.border-2.box-border(
+          v-for="d,i in kmean.groupedAddressesByDays.value"
+          :class="[currDay == i ? 'border-accent':'border-neutral']"
+          :style="{ borderColor: colors[currDay == i ? currDay : -1] }"
+          class=""
           )
-          //- @change="(e) => e.added.element.day = e.added.newIndex"
-          //- tag="transition-group"
-          //- :component-data="{ tag: 'ul', type: 'transition-group', name: !drag ? 'flip-list' : null }"
-          //- v-model="plan[0]"
-          //- @start="drag.value = true"
-          //- @end="drag.value = false"
-          //- group="people"
-          
-          template(#item="{ element, index }")
-            li.item(
-              :id="element.id"
-              :ref="(el) => element.li = el"
-              @pointerover="onAddrOver(element)"
-              )
-              div.flex.space-x-2(
-                :class="element.hovered ? `border` : ``"
+          .flex.items-baseline.justify-between.space-x-2.px-4.py-4
+            .flex.items-center
+              .inline-block.rounded-full.h-4.w-4.mr-2(:style="{ background: colors[i] }") 
+              .font-bold.text-xl.uppercase {{days[i]}}
+            span Точек: {{ d.length }}
+          .divider.divider-neutral.my-0.mb-4.h-0
+          draggable(
+            v-model="kmean.groupedAddressesByDays.value[i]"
+            v-bind="dragOptions"
+            itemKey="address"
+            tag="ul"
+            :move="handleMove"
+            @start="isDragging = true"
+            @end="handleDropEnd"
+            :data-day-id="i"
+          )
+            template(#item="{ element, index }")
+              //- @pointerover="onAddrOver(element)"
+              li(
+                :id="element.iid"
+                :ref="(el) => element.li = el"
+                @pointerenter="onAddrPointerEnter(element)"
+                @click="() => console.log(element)"
                 )
-                //- pre {{ element.store }}
-                img.bg-transparent.h-8.w-8.mask.mask-squircle(:src="`${element.store.toLowerCase()}.png`")
-                span.flex-1 {{ element.address.trim() }} [{{ element.day }}] {{ element.XXX }}
-                //- pre ---{{ element.id }}---
-                span {{ element.cluster }}
-                span {{ element.days }}
-                .join
-                  //- .join-item()`
-                  a.btn.btn-sm(
-                    target="_blank"
-                    v-if="element.geocode"
-                    :href="`https://yandex.ru/maps/?pt=${element.geocode.Point.pos.split(' ')}&z=18`"
-                    ) YA
-  
-                  button.join-item.btn.btn-sm(@click="locateAddress(element)") Locate
+                div.flex.p-2.space-x-2(
+                  class="transition rounded mx-2 p-2 select-none"
+                  :class="{ 'bg-neutral': element.isHovered }"
+                  )
+                  //- span {{ element.canDrag }}
+                  .h-4.w-4.rounded-full.flex-none(:style="{...element.pieChartStyles}")
+                  .flex-1 {{ element.address }}
+                  //- span.text-xs [{{ element.iid }}]
+                  //- span.text-lg [{{ element.visit_frequency }}]
+                  span.text-nowrap.text-lg {{ element.days }}
+    
+          //- draggable.menu(
+            v-bind="dragOptions"
+            draggable=".item"
+            @change="handleDayChange"
+            @end="handleDropEnd"
+            )
+            //- @change="(e) => e.added.element.day = e.added.newIndex"
+            //- tag="transition-group"
+            //- :component-data="{ tag: 'ul', type: 'transition-group', name: !drag ? 'flip-list' : null }"
+            //- v-model="plan[0]"
+            //- @start="drag.value = true"
+            //- @end="drag.value = false"
+            //- group="people"
+            
+            template(#item="{ element, index }")
+              li.item(
+                :id="element.id"
+                :ref="(el) => element.li = el"
+                @pointerover="onAddrOver(element)"
+                )
+                div.flex.space-x-2(
+                  :class="element.hovered ? `border` : ``"
+                  )
+                  //- pre {{ element.store }}
+                  img.bg-transparent.h-8.w-8.mask.mask-squircle(:src="`${element.store.toLowerCase()}.png`")
+                  span.flex-1 {{ element.address.trim() }} [{{ element.day }}] {{ element.XXX }}
+                  //- pre ---{{ element.id }}---
+                  span {{ element.cluster }}
+                  span {{ element.days }}
+                  .join
+                    //- .join-item()`
+                    a.btn.btn-sm(
+                      target="_blank"
+                      v-if="element.geocode"
+                      :href="`https://yandex.ru/maps/?pt=${element.geocode.Point.pos.split(' ')}&z=18`"
+                      ) YA
+    
+                    button.join-item.btn.btn-sm(@click="locateAddress(element)") Locate
   
   </template>
   
@@ -171,13 +114,20 @@
   
   import draggable from "vuedraggable"
   
-  import {
-    YandexMap, YandexMapDefaultSchemeLayer, YandexMapDefaultFeaturesLayer, YandexMapClusterer, 
-    YandexMapHint, YandexMapDefaultMarker, YandexMapMarker, YandexMapCollection } from 'vue-yandex-maps';
-  
-  import { computed, nextTick, reactive, shallowReactive, toRaw, unref, watch, watchEffect } from 'vue';
+  // import { computed, nextTick, reactive, shallowReactive, toRaw, unref, watch, watchEffect } from 'vue';
   import aaa from 'src/addresses.json'
-  console.log(aaa); 
+  // console.log(aaa); 
+
+  const fileData = ref([])
+
+  // const addresses = reactive([])
+  const addresses = reactive(aaa)
+
+  watchEffect(async () => {
+    console.log('------------', fileData.value);
+    Object.assign(addresses, fileData.value)
+    // await fillCoordinates()
+  })
   
   const isDragging = ref(false)
   const canDrop = ref(true)
@@ -188,25 +138,37 @@
           forceFallback: true,
           ghostClass: "ghost"
         };
-  
-  function parseCSVWithDoubleQuotes(input) {
-    const rows = input.split('\n');
-    rows.shift()
-    return rows.map(row => {
-      // Split the row by commas not enclosed in double quotes
-      let r = row.split(/,(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)/).map(field => {
-        // Remove leading and trailing spaces and double quotes from the field
-        return field.trim().replace(/^\"|\"$/g, '');
-      });
+        
+  import { read, writeFileXLSX, utils } from "xlsx"
+  function exportFile() {
+    /* generate worksheet from state */
+
+    let o = addresses.map(a => {
+      const { store, address } = a
+      let ggg = {}
+      let ddd = days.forEach((d, i) => {
+        ggg[d] = a.days.includes(i) ? '1':''
+        // return {
+        //   [d]: a.days.includes(i),
+        // }
+      })
       return {
-        store: r[0],
-        address: r[1],
-        visit_frequency: +r[2],
+        store, address,
+        // day: a.days.map(d => days[d]).join(', ')
+        ...ggg,
       }
-      return r
     })
-    .filter(row => row.visit_frequency > 0);
+    console.table(o);    
+    
+    const ws = utils.json_to_sheet(o);
+    /* create workbook and append worksheet */
+    const wb = utils.book_new();
+    utils.book_append_sheet(wb, ws, "Data");
+    /* export to XLSX */
+
+    writeFileXLSX(wb, "out.xlsx");
   }
+
   
   const days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт']; 
   
@@ -216,7 +178,6 @@
   })
   
   // const addresses = reactive( parseCSVWithDoubleQuotes(route_csv) )
-  const addresses = reactive( aaa )
   addresses.forEach( (d,i) => {
     // let pos = d.geocode.Point.pos.split(" ").map(Number)  
     // console.log(pos);
@@ -233,13 +194,13 @@
       if (d.ya.features?.length > 0) {
         return d.ya?.features[0].geometry?.coordinates[0]
       }
-      return d.ya?.geometry?.coordinates[0] || null
+      return d.ya?.geometry?.coordinates[0] || 0
     })
     d.y = computedEager(() => {
       if (d.ya?.features?.length > 0) {
         return d.ya?.features[0].geometry?.coordinates[1]
       }
-      return d.ya?.geometry?.coordinates[1] || null
+      return d.ya?.geometry?.coordinates[1] || 0
     })
     d.pieChartStyles = computedEager(() => {
       if (!d.days) return null
@@ -376,7 +337,7 @@
   }
   
   
-  const fillCoordinates = async () => {
+  async function fillCoordinates() {
     // for (const item of addresses.slice(0, 3)) {
       console.log('-------------', addresses.length);
       for (const [i, item] of addresses.entries()) {
@@ -397,8 +358,6 @@
     // console.log(JSON.stringify((addresses), null, 2));
   
   }
-  
-  const mmm = ref([])
   
   // watch(plan, (newVal, oldVal) => {
   //   // mmm.value = newVal
@@ -443,6 +402,7 @@
       let fromDayId = a.days.indexOf(fromDay)
       // toDayId = a.days.indexOf(toDay)
       a.days[fromDayId] = toDay
+      onAddrPointerEnter(a)
       // a.days.splice(fromDayId, 1)
       // a.days.splice(toDayId, 0, fromDay)
       

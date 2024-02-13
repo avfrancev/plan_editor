@@ -21,14 +21,13 @@
     "d3-selection": "^3.0.0",
     "d3-shape": "^3.2.0",
     "d3-zoom": "^3.0.0",
-    "lodash-es": "^4.17.21",
-    "popmotion": "^11.0.5",
     "pug": "^3.0.2",
     "sass": "^1.69.7",
     "vue": "^3.3.11",
     "vue-router": "^4.2.5",
     "vue-yandex-maps": "2.0.0-rc.12",
-    "vuedraggable": "^4.1.0"
+    "vuedraggable": "^4.1.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.1/xlsx-0.20.1.tgz"
   },
   "devDependencies": {
     "@iconify/json": "^2.2.171",
